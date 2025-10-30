@@ -4,12 +4,15 @@ import mysql.connector
 app = Flask(__name__)
 
 # Connect to MySQL
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="Kesav@24",  # 🔁 Replace with your actual MySQL password
-    database="task_manager"         # 🔁 Replace with your actual database name
+import os
+
+mysql.connector.connect(
+    host=os.getenv("localhost"),
+    user=os.getenv("root"),
+    password=os.getenv("Kesav@24"),
+    database=os.getenv("task_manager")
 )
+
 cursor = conn.cursor()
 
 # Home route - show all tasks
