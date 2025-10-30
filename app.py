@@ -1,19 +1,23 @@
 from flask import Flask, render_template, request, redirect
-import mysql.connector
+import sqlite3
+import os
 
 app = Flask(__name__)
 
-# Connect to MySQL
-import os
-
-mysql.connector.connect(
-    host=os.getenv("localhost"),
-    user=os.getenv("root"),
-    password=os.getenv("Kesav@24"),
-    database=os.getenv("task_management")
-)
-
+# Connect to SQLite
+conn = sqlite3.connect("tasks.db", check_same_thread=False)
 cursor = conn.cursor()
+
+# Create table if not exists
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT
+)
+""")
+conn.commit()
 
 # Home route - show all tasks
 @app.route('/')
@@ -28,14 +32,14 @@ def add_task():
     title = request.form['title']
     description = request.form['description']
     status = request.form['status']
-    cursor.execute("INSERT INTO tasks (title, description, status) VALUES (%s, %s, %s)", (title, description, status))
+    cursor.execute("INSERT INTO tasks (title, description, status) VALUES (?, ?, ?)", (title, description, status))
     conn.commit()
     return redirect('/')
 
 # Edit task - show edit form
 @app.route('/edit/<int:id>')
 def edit_task(id):
-    cursor.execute("SELECT * FROM tasks WHERE id = %s", (id,))
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (id,))
     task = cursor.fetchone()
     return render_template("edit.html", task=task)
 
@@ -45,20 +49,18 @@ def update_task(id):
     title = request.form['title']
     description = request.form['description']
     status = request.form['status']
-    cursor.execute("UPDATE tasks SET title=%s, description=%s, status=%s WHERE id=%s", (title, description, status, id))
+    cursor.execute("UPDATE tasks SET title=?, description=?, status=? WHERE id=?", (title, description, status, id))
     conn.commit()
     return redirect('/')
 
 # Delete task
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete_task(id):
-    cursor.execute("DELETE FROM tasks WHERE id = %s", (id,))
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (id,))
     conn.commit()
     return redirect('/')
 
-# Run the app
-if __name__ == '__main__':
-    app.run(debug=True)
+# Dashboard route
 @app.route('/dashboard')
 def dashboard():
     cursor.execute("SELECT COUNT(*) FROM tasks WHERE status = 'Pending'")
@@ -66,3 +68,7 @@ def dashboard():
     cursor.execute("SELECT COUNT(*) FROM tasks WHERE status = 'Completed'")
     completed = cursor.fetchone()[0]
     return render_template("dashboard.html", pending=pending, completed=completed)
+
+# Run the app
+if __name__ == '__main__':
+    app.run(debug=True)
