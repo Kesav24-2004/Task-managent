@@ -10,7 +10,7 @@ mysql.connector.connect(
     host=os.getenv("localhost"),
     user=os.getenv("root"),
     password=os.getenv("Kesav@24"),
-    database=os.getenv("task_manager")
+    database=os.getenv("task_management")
 )
 
 cursor = conn.cursor()
