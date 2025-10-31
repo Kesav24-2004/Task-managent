@@ -13,28 +13,46 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container mt-5">
-        <!-- Title -->
-        <h1 class="text-center text-white mb-4"><i class="fas fa-chart-line"></i> Task Dashboard</h1>
 
-        <!-- Cards Row -->
+    <style>
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 300px;
+            width: 300px;
+        }
+        body {
+            background-color: #1e1e2f;
+            color: white;
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        ul li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body style="font-family: 'Segoe UI', sans-serif;">
+    <div class="container mt-5">
+        <h1 class="text-center text-white mb-4"><i class="fas fa-chart-line"></i> Task Dashboard</h1>
+        <p class="text-white text-center mb-4">
+            This dashboard shows task progress and distribution across statuses and employees.
+        </p>
+
         <div class="row">
-            <!-- Pending Tasks Card -->
             <div class="col-md-6 mb-4">
                 <div class="card text-white bg-warning shadow">
-                    <div class="card-body">
+                    <div class="card-body text-center">
                         <h5 class="card-title">Pending Tasks</h5>
                         <p class="card-text display-4">{{ pending }}</p>
                     </div>
                 </div>
             </div>
-
-            <!-- Completed Tasks Card -->
             <div class="col-md-6 mb-4">
                 <div class="card text-white bg-success shadow">
-                    <div class="card-body">
+                    <div class="card-body text-center">
                         <h5 class="card-title">Completed Tasks</h5>
                         <p class="card-text display-4">{{ completed }}</p>
                     </div>
@@ -42,32 +60,60 @@
             </div>
         </div>
 
-        <!-- Pie Chart Section -->
-        <div class="mt-5 text-center">
+        <div class="text-center mt-5">
             <h4 class="text-white mb-3">Task Distribution</h4>
-            <canvas id="taskChart" width="300" height="300"></canvas>
+            <div class="chart-container">
+                <canvas id="taskChart"></canvas>
+            </div>
         </div>
 
-        <!-- Back Button -->
+        {% if employees %}
+        <div class="employee-section mt-5">
+            <h3><i class="fas fa-users"></i> Employees and Assigned Tasks</h3>
+            <ul>
+                {% for emp in employees %}
+                    <li>
+                        <strong>{{ emp.name }}</strong> — 
+                        {{ emp.task_count }} task{{ 's' if emp.task_count != 1 else '' }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if role_summary %}
+        <div class="row mt-5">
+            {% for role, count in role_summary.items() %}
+            <div class="col-md-4 mb-3">
+                <div class="card bg-dark text-white shadow">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">{{ role }}</h5>
+                        <p class="card-text">Tasks Assigned: {{ count }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="text-center mt-4">
             <a href="/" class="btn btn-light"><i class="fas fa-arrow-left"></i> Back to Home</a>
         </div>
     </div>
 
     <!-- JS Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Chart.js Script -->
     <script>
       window.onload = function () {
-        const ctx = document.getElementById('taskChart').getContext('2d');
+        const canvas = document.getElementById('taskChart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
         const pending = {{ pending | default(0) | int }};
         const completed = {{ completed | default(0) | int }};
         const total = pending + completed;
-
-        // Avoid empty chart by showing dummy data if total is 0
         const chartData = total === 0 ? [1, 0] : [pending, completed];
 
         new Chart(ctx, {
@@ -81,10 +127,9 @@
           },
           options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-              legend: {
-                position: 'bottom'
-              }
+              legend: { position: 'bottom' }
             }
           }
         });
